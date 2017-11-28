@@ -1,16 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+
 // Network I\O
-using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Net.Http.Formatting;
 
 // Json
-using System.Json;
+using Newtonsoft.Json;
 
 
 
@@ -18,7 +14,7 @@ using System.Json;
 /* 
  *  Install-Package Microsoft.AspNet.WebApi.Client
  * 
- *  Install-Package System.Json -Version 4.0.20126.16343
+ *  Install-Package NewtonSoft.Json
  */
 
 namespace HttpGetJsonParsing
@@ -30,58 +26,7 @@ namespace HttpGetJsonParsing
 	* * 
 	* */
 
-
-	public class Book
-	{
-		private const string authorKey = "author";
-		private const string titleKey = "title";
-		private const string descriptionKey = "description";
-
-		public string author { get; set; }
-		public string title { get; set; }
-		public string description { get; set; }
-	
-
-		public Book()
-		{
-			author = "";
-			title = "";
-			description = "";
-		}
-
-		public Book(string jsonString) : this()
-		// TODO
-		{
-			JsonObject jsonObject = JsonObject.Parse(jsonString);
-			author = jsonObject.GetNamedString(authorKey, "");
-			title = jsonObject.GetNamedString(titleKey, "");
-
-			IJsonValue descriptionJsonValue = jsonObject.GetNamedString(descriptionKey);
-			if (descriptionJsonValue.ValueType == JsonValueType.Null)
-			{
-				description = "No descrption, sorry";
-			}
-			else
-			{
-				description = descriptionJsonValue.GetString();
-			}
-
-		}
-		//-------------AUTO GENERATE--------------
-		public override bool Equals(object obj)
-		{
-			return base.Equals(obj);
-		}
-
-		public override string ToString()
-		{
-			return base.ToString();
-		}
-
-	}
-
-
-		class Program
+	class Program
 	{
 		// add static HttpClient property to the Program class
 		static HttpClient client = new HttpClient();
@@ -128,11 +73,19 @@ namespace HttpGetJsonParsing
 			}
 			return jsonReceived;
 
-
-			// Instead of using the default formatters, you can provide a list of formatters to the ReadAsync method,
-			// which is useful if you have a custom media-type formatter
-
 		}
+
+		// -------------------------------Json to Object
+		private static T DeSerializedJsonData<T>(string json_data) where T : new()
+		{
+
+			// if string with JSON data is not empty, deserialize it to class and return its instance 
+			if (!string.IsNullOrEmpty(json_data))
+				{return  JsonConvert.DeserializeObject<T>(json_data) ; }
+			else { throw new ArgumentNullException(nameof (DeSerializedJsonData)) ; }
+			
+		}
+
 
 		//----------------------------MAIN-------------------------
 		static void Main(string[] args)
@@ -141,6 +94,7 @@ namespace HttpGetJsonParsing
 			Console.WriteLine("Prior written consent from The New York Times is required to use Times data without attribution.");
 			RunAsync().Wait();
 		}
+
 		// network done in background thread
 		// TODO: fix warning on use of await
 		static async Task RunAsync()
@@ -156,19 +110,27 @@ namespace HttpGetJsonParsing
 			// hard coded demo
 			try
 			{
+				// Get Json
 				String answer = await GetResponseAsync(nyApi);
 				ShowResponse(answer);
+
 				// for demo purpose only, stop before Parsing
 				Console.ReadLine();
-				// Parsing
-				// extract books from json
-				Book firstBook = new Book(answer);
-					Console.WriteLine("First Book");
-					Console.WriteLine("Title: ",firstBook.title);
-					Console.WriteLine("Author", firstBook.author);
-					Console.WriteLine("Description", firstBook.description);
-					// for demo purpose only, stop before quiting
-					Console.ReadLine();
+
+
+				// extract from json
+				NYTimesJsonConverted resultFromNYTimeApi = new NYTimesJsonConverted();
+				resultFromNYTimeApi  = DeSerializedJsonData<NYTimesJsonConverted>(answer);
+
+				// get inside				
+				NYTimesJsonConverted.Rootobject extractRootObject = new NYTimesJsonConverted.Rootobject();
+			
+				string status = extractRootObject.status;
+				Console.WriteLine(status);
+					
+
+				// for demo purpose only, stop before quiting
+				Console.ReadLine();
 
 				}
 			catch (Exception e)
