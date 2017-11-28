@@ -9,19 +9,79 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Formatting;
 
-// Tools NuGet Package Manager Console : Microsoft.AspNet.WebApi.Client
+// Json
+using System.Json;
 
 
-namespace HttpGetJson
+
+// Tools NuGet Package Manager Console : 
+/* 
+ *  Install-Package Microsoft.AspNet.WebApi.Client
+ * 
+ *  Install-Package System.Json -Version 4.0.20126.16343
+ */
+
+namespace HttpGetJsonParsing
 {
-	// requirements
 	/*
 	*open API provided by the NYTimes. http://developer.nytimes.com/
 	* *https://api.nytimes.com/svc/books/v3/lists/overview.json?api-key=<your-api-key>
     * * my-api-key : 02e195f687414c238cfc492dd6cef131
 	* * 
 	* */
-	class Program
+
+
+	public class Book
+	{
+		private const string authorKey = "author";
+		private const string titleKey = "title";
+		private const string descriptionKey = "description";
+
+		public string author { get; set; }
+		public string title { get; set; }
+		public string description { get; set; }
+	
+
+		public Book()
+		{
+			author = "";
+			title = "";
+			description = "";
+		}
+
+		public Book(string jsonString) : this()
+		// TODO
+		{
+			JsonObject jsonObject = JsonObject.Parse(jsonString);
+			author = jsonObject.GetNamedString(authorKey, "");
+			title = jsonObject.GetNamedString(titleKey, "");
+
+			IJsonValue descriptionJsonValue = jsonObject.GetNamedString(descriptionKey);
+			if (descriptionJsonValue.ValueType == JsonValueType.Null)
+			{
+				description = "No descrption, sorry";
+			}
+			else
+			{
+				description = descriptionJsonValue.GetString();
+			}
+
+		}
+		//-------------AUTO GENERATE--------------
+		public override bool Equals(object obj)
+		{
+			return base.Equals(obj);
+		}
+
+		public override string ToString()
+		{
+			return base.ToString();
+		}
+
+	}
+
+
+		class Program
 	{
 		// add static HttpClient property to the Program class
 		static HttpClient client = new HttpClient();
@@ -68,17 +128,17 @@ namespace HttpGetJson
 			}
 			return jsonReceived;
 
-			
+
 			// Instead of using the default formatters, you can provide a list of formatters to the ReadAsync method,
 			// which is useful if you have a custom media-type formatter
 
 		}
 
 		//----------------------------MAIN-------------------------
-			static void Main(string[] args)
+		static void Main(string[] args)
 		{
 			Console.WriteLine("Data provided by The New York Times, for developement purpose only");
-            Console.WriteLine("Prior written consent from The New York Times is required to use Times data without attribution.");
+			Console.WriteLine("Prior written consent from The New York Times is required to use Times data without attribution.");
 			RunAsync().Wait();
 		}
 		// network done in background thread
@@ -96,15 +156,30 @@ namespace HttpGetJson
 			// hard coded demo
 			try
 			{
-			    String answer = await GetResponseAsync(nyApi);
+				String answer = await GetResponseAsync(nyApi);
 				ShowResponse(answer);
-				// for demo purpose only
+				// for demo purpose only, stop before Parsing
 				Console.ReadLine();
+				// Parsing
+				// extract books from json
+				Book firstBook = new Book(answer);
+					Console.WriteLine("First Book");
+					Console.WriteLine("Title: ",firstBook.title);
+					Console.WriteLine("Author", firstBook.author);
+					Console.WriteLine("Description", firstBook.description);
+					// for demo purpose only, stop before quiting
+					Console.ReadLine();
+
 				}
 			catch (Exception e)
 			{
 				Console.WriteLine(e.Message);
 			}
+
+			
+
+
+
 		}
 	}
 }
