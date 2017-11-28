@@ -7,8 +7,11 @@ using System.Net.Http.Headers;
 
 // Json
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System.Linq;
 
-
+using static HttpGetJsonParsing.NYTimesJsonConverted;
+using System.IO;
 
 // Tools NuGet Package Manager Console : 
 /* 
@@ -111,6 +114,7 @@ namespace HttpGetJsonParsing
 			try
 			{
 				// Get Json
+				//TODO: check connectivity
 				String answer = await GetResponseAsync(nyApi);
 				ShowResponse(answer);
 
@@ -118,24 +122,54 @@ namespace HttpGetJsonParsing
 				Console.ReadLine();
 
 
-				// extract from json
+				// extract higher class from json--------------------------------------
 				NYTimesJsonConverted resultFromNYTimeApi = new NYTimesJsonConverted();
-				resultFromNYTimeApi  = DeSerializedJsonData<NYTimesJsonConverted>(answer);
+				resultFromNYTimeApi = DeSerializedJsonData<NYTimesJsonConverted>(answer);
+				
+				// get inside	-------------------------------------------			
+				JObject o = new JObject();
+				o = JObject.Parse(answer);
 
-				// get inside				
-				NYTimesJsonConverted.Rootobject extractRootObject = new NYTimesJsonConverted.Rootobject();
-			
-				string status = extractRootObject.status;
+				// status should be OK
+				// TODO: if not OK?
+				string status = (string)o["status"];
 				Console.WriteLine(status);
-					
+				Console.ReadLine();
 
-				// for demo purpose only, stop before quiting
+				int nbResults = (int)o["num_results"];
+				Console.WriteLine(nbResults);
+				Console.ReadLine();
+
+				//// book extraction-------------------------------------------
+				JsonTextReader reader = new JsonTextReader(new StringReader(answer));
+				int i = 0;
+				string[] listOfBook = new string[nbResults];
+				while (reader.Read())
+				{
+					if (reader.Value!=null)
+					{
+						if ((reader.Value.Equals("title")))
+						{
+							listOfBook[i] = reader.ReadAsString();
+							//---
+							Console.WriteLine(listOfBook[i]);
+							i++;
+							
+						}
+
+					}
+
+				}
+				;
+
+				// for demo purpose onlywith console, stop before quiting
 				Console.ReadLine();
 
 				}
 			catch (Exception e)
 			{
 				Console.WriteLine(e.Message);
+				Console.ReadLine();
 			}
 
 			
