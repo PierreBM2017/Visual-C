@@ -73,8 +73,14 @@ namespace HttpGetJsonParsing
 			if (response.IsSuccessStatusCode)
 			{
 				jsonReceived = await response.Content.ReadAsStringAsync();
+				return jsonReceived;
 			}
-			return jsonReceived;
+			else
+			{
+				return null;
+			}
+			
+
 
 		}
 
@@ -116,9 +122,10 @@ namespace HttpGetJsonParsing
 				// Get Json
 				//TODO: check connectivity
 				String answer = await GetResponseAsync(nyApi);
-				ShowResponse(answer);
 
+				
 				// for demo purpose only, stop before Parsing
+				ShowResponse(answer);
 				Console.ReadLine();
 
 
