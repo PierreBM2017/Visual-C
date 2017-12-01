@@ -1,17 +1,14 @@
 ﻿using System;
+using System.IO;
 using System.Threading.Tasks;
 
 // Network I\O
 using System.Net.Http;
-using System.Net.Http.Headers;
 
 // Json
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System.Linq;
 
-using static HttpGetJsonParsing.NYTimesJsonConverted;
-using System.IO;
 
 // Tools NuGet Package Manager Console : 
 /* 
@@ -69,14 +66,9 @@ namespace HttpGetJsonParsing
 		{
 			String jsonReceived = "";
 			// GET
-			// The GetAsync method sends the HTTP GET request.
-			// The method is asynchronous, because it performs network I/O.
-			// When the method completes, it returns an HttpResponseMessage that contains the HTTP response.
 			// If the status code in the response is a success code, the response body contains the JSON representation of a product.
 			HttpResponseMessage response = await client.GetAsync(path);
 			// READ
-			// Call ReadAsAsync to deserialize the JSON payload to a Product instance.
-			// The ReadAsync method is asynchronous because the response body can be arbitrarily large.
 			// HttpClient does not throw an exception when the HTTP response contains an error code.
 			// Instead, the IsSuccessStatusCode property is false if the status is an error code.
 			if (response.IsSuccessStatusCode)
@@ -88,9 +80,6 @@ namespace HttpGetJsonParsing
 			{
 				return null;
 			}
-			
-
-
 		}
 
 		// ------------------------from a string of Json to Object
@@ -114,37 +103,57 @@ namespace HttpGetJsonParsing
 		}
 
 		// network done in background thread
-		// TODO: fix warning on use of await
 		static async Task RunAsync()
 		{
-			// initialization
-			// sets the base URI for HTTP requests,
-			// and sets the Accept header to "application/json",
-			// client.BaseAddress = new Uri(nyApi);
-			// client.DefaultRequestHeaders.Accept.Clear();
-			// client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
+		
 			/** hard coded demo in console ;
 			*  (1)  get the list of type of books
 			 * (2) select one type
 			 * (3) get the list of books sort on that type
 			* (4) display the result
-			* 
-			* no connectivity check before Http request
-			* TODO: check connectivity
-			 **/
+			**/
 			try
 			{
 				String answer = "";
                 // Step 1: list of types of books
 				String url_type_list = nyApi + nyListType + "?" +myApiKey;
-				Console.WriteLine("url step 1");
-				Console.WriteLine(url_type_list);
+				Console.WriteLine("");
+				Console.WriteLine(" find the different types of Books");
+				Console.ReadLine();
 
 				answer = await GetResponseAsync(url_type_list);
-				// for demo purpose only
-				      ShowResponse(answer);
-				      Console.ReadLine();
+				
+				// get inside answer to select the type of books list----------------------------			
+				JObject o_type = new JObject();
+				o_type = JObject.Parse(answer);
+				string status_type = (string)o_type["status"];
+
+				if (status_type.Equals("OK"))
+				{
+					int nbResults_type = (int)o_type["num_results"];
+
+					//// Type extraction-------------------------------------------
+					JsonTextReader reader_type = new JsonTextReader(new StringReader(answer));
+					int i = 0;
+					string[] listOfType = new string[nbResults_type];
+					while (reader_type.Read())
+					{
+						if (reader_type.Value != null)
+						{
+							if ((reader_type.Value.Equals("list_name_encoded")))
+							{
+								listOfType[i] = reader_type.ReadAsString();
+								//---
+								Console.WriteLine(listOfType[i]);
+								i++;
+
+							}
+
+						}
+
+					}
+				;
+				}
 
 				//Step 2: choose a type
 				Console.WriteLine(" enter a type of book ");
@@ -152,54 +161,42 @@ namespace HttpGetJsonParsing
 
 				// Step 3: get the list of books sort by that type
 				String url_list = nyApi + nyList + "?" + myApiKey + "&" +  "list=" + type;
-				Console.WriteLine("url step 3");
-				Console.WriteLine(url_list);
-				answer = await GetResponseAsync(url_list);
-				// for demo purpose only
-				ShowResponse(answer);
-				Console.ReadLine();
 
-				
-				// extract higher class from json--------------------------------------
-				NYTimesJsonConverted resultFromNYTimeApi = new NYTimesJsonConverted();
-				resultFromNYTimeApi = DeSerializedJsonData<NYTimesJsonConverted>(answer);
-				
-				// get inside	-------------------------------------------			
+				answer = await GetResponseAsync(url_list);
+
+				// get inside	to extract books-------------------------------------------			
 				JObject o = new JObject();
 				o = JObject.Parse(answer);
 
-				// status should be OK
-				// TODO: if not OK?
 				string status = (string)o["status"];
-				Console.WriteLine(status);
-				Console.ReadLine();
-
-				int nbResults = (int)o["num_results"];
-				Console.WriteLine(nbResults);
-				Console.ReadLine();
-
-				//// book extraction-------------------------------------------
-				JsonTextReader reader = new JsonTextReader(new StringReader(answer));
-				int i = 0;
-				string[] listOfBook = new string[nbResults];
-				while (reader.Read())
+	
+				if (status.Equals("OK"))
 				{
-					if (reader.Value!=null)
+					int nbResults = (int)o["num_results"];
+					Console.WriteLine(nbResults+" Books found");
+
+					//// book extraction-------------------------------------------
+					JsonTextReader reader = new JsonTextReader(new StringReader(answer));
+					int i = 0;
+					string[] listOfBook = new string[nbResults];
+					while (reader.Read())
 					{
-						if ((reader.Value.Equals("title")))
+						if (reader.Value != null)
 						{
-							listOfBook[i] = reader.ReadAsString();
-							//---
-							Console.WriteLine(listOfBook[i]);
-							i++;
-							
+							if ((reader.Value.Equals("title")))
+							{
+								listOfBook[i] = reader.ReadAsString();
+								//---
+								Console.WriteLine(listOfBook[i]);
+								i++;
+
+							}
+
 						}
 
 					}
-
-				}
 				;
-
+				}
 				// for demo purpose onlywith console, stop before quiting
 				Console.ReadLine();
 
